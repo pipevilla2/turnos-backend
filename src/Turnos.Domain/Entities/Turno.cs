@@ -26,7 +26,7 @@ public class Turno
     // Requerido por EF Core
     private Turno() { }
 
-    public static Turno Crear(string cedula, int sucursalId, string codigoTurno, DateTime ahoraUtc)
+    public static Turno Crear(string cedula, int sucursalId, string codigoTurno, DateTime ahoraColombia)
     {
         return new Turno
         {
@@ -34,15 +34,15 @@ public class Turno
             Cedula = cedula,
             SucursalId = sucursalId,
             CodigoTurno = codigoTurno,
-            FechaHoraCreacion = ahoraUtc,
-            FechaHoraExpiracion = ahoraUtc.AddMinutes(MinutosLimiteActivacion),
+            FechaHoraCreacion = ahoraColombia,
+            FechaHoraExpiracion = ahoraColombia.AddMinutes(MinutosLimiteActivacion),
             Estado = EstadoTurno.Pendiente
         };
     }
 
-    public void Activar(DateTime ahoraUtc)
+    public void Activar(DateTime ahoraColombia)
     {
-        if (Estado == EstadoTurno.Expirado || (Estado == EstadoTurno.Pendiente && ahoraUtc > FechaHoraExpiracion))
+        if (Estado == EstadoTurno.Expirado || (Estado == EstadoTurno.Pendiente && ahoraColombia > FechaHoraExpiracion))
         {
             Estado = EstadoTurno.Expirado;
             throw new TurnoExpiradoException(Id);
@@ -52,7 +52,7 @@ public class Turno
             throw new OperacionInvalidaException($"El turno {CodigoTurno} no se puede activar en estado {Estado}.");
 
         Estado = EstadoTurno.Activado;
-        FechaHoraActivacion = ahoraUtc;
+        FechaHoraActivacion = ahoraColombia;
     }
 
     public void MarcarAtendido()
@@ -70,9 +70,9 @@ public class Turno
     }
 
     /// <summary>Usado por el proceso de expiración en segundo plano.</summary>
-    public bool IntentarExpirar(DateTime ahoraUtc)
+    public bool IntentarExpirar(DateTime ahoraColombia)
     {
-        if (Estado == EstadoTurno.Pendiente && ahoraUtc > FechaHoraExpiracion)
+        if (Estado == EstadoTurno.Pendiente && ahoraColombia > FechaHoraExpiracion)
         {
             Estado = EstadoTurno.Expirado;
             return true;

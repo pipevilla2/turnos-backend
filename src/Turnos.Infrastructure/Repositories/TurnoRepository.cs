@@ -32,16 +32,18 @@ public class TurnoRepository : ITurnoRepository
     public async Task AddAsync(Turno turno, CancellationToken ct = default) =>
         await _context.Turnos.AddAsync(turno, ct);
 
-    public Task<int> CountByCedulaOnDateAsync(string cedula, DateTime fechaUtc, CancellationToken ct = default)
-    {
-        var inicioDia = fechaUtc.Date;
-        var finDia = inicioDia.AddDays(1);
-        return _context.Turnos.CountAsync(t =>
+    public Task<int> CountByCedulaBetweenAsync(string cedula, DateTime inicio, DateTime fin, CancellationToken ct = default) =>
+        _context.Turnos.CountAsync(t =>
             t.Cedula == cedula &&
-            t.FechaHoraCreacion >= inicioDia &&
-            t.FechaHoraCreacion < finDia &&
+            t.FechaHoraCreacion >= inicio &&
+            t.FechaHoraCreacion < fin &&
             t.Estado != EstadoTurno.Cancelado, ct);
-    }
+
+    public Task<int> CountBySucursalBetweenAsync(int sucursalId, DateTime inicio, DateTime fin, CancellationToken ct = default) =>
+        _context.Turnos.CountAsync(t =>
+            t.SucursalId == sucursalId &&
+            t.FechaHoraCreacion >= inicio &&
+            t.FechaHoraCreacion < fin, ct);
 
     public Task<IReadOnlyList<Turno>> GetPendientesVencidosAsync(DateTime ahoraUtc, CancellationToken ct = default) =>
         _context.Turnos

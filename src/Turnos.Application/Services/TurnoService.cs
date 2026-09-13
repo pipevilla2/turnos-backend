@@ -4,13 +4,13 @@ using Turnos.Domain.Entities;
 using Turnos.Domain.Enums;
 using Turnos.Domain.Exceptions;
 using Turnos.Domain.Interfaces;
+using Turnos.Domain.Time;
 
 namespace Turnos.Application.Services;
 
 /// <summary>
 /// Orquesta las reglas de negocio de agendamiento de turnos.
-/// La generación de fechas usa UTC internamente; la exposición al cliente
-/// se hace ya convertida por el propio DTO (SegundosRestantesActivacion).
+/// Las fechas de negocio se generan y almacenan con la hora local de Colombia.
 /// </summary>
 public class TurnoService : ITurnoService
 {
@@ -31,13 +31,16 @@ public class TurnoService : ITurnoService
         if (!sucursal.Activa)
             throw new SucursalInactivaException(sucursal.Id);
 
-        var ahora = DateTime.UtcNow;
+        var ahora = ColombiaClock.Ahora;
+        var inicioDia = ahora.Date;
+        var finDia = inicioDia.AddDays(1);
 
-        var turnosHoy = await _turnoRepository.CountByCedulaOnDateAsync(dto.Cedula, ahora, ct);
-        if (turnosHoy >= Turno.MaxTurnosDiarios)
+        var turnosCedulaHoy = await _turnoRepository.CountByCedulaBetweenAsync(dto.Cedula, inicioDia, finDia, ct);
+        if (turnosCedulaHoy >= Turno.MaxTurnosDiarios)
             throw new LimiteTurnosDiariosException(dto.Cedula);
 
-        var codigo = GenerarCodigoTurno(sucursal.Id, turnosHoy + 1);
+        var turnosSucursalHoy = await _turnoRepository.CountBySucursalBetweenAsync(sucursal.Id, inicioDia, finDia, ct);
+        var codigo = GenerarCodigoTurno(sucursal.Id, turnosSucursalHoy + 1, ahora);
         var turno = Turno.Crear(dto.Cedula, sucursal.Id, codigo, ahora);
 
         await _turnoRepository.AddAsync(turno, ct);
@@ -72,7 +75,7 @@ public class TurnoService : ITurnoService
         var turno = await _turnoRepository.GetByIdAsync(id, ct)
             ?? throw new NotFoundException(nameof(Turno), id);
 
-        turno.Activar(DateTime.UtcNow);
+        turno.Activar(ColombiaClock.Ahora);
         await _turnoRepository.SaveChangesAsync(ct);
 
         return MapToDto(turno, turno.Sucursal?.Nombre ?? string.Empty);
@@ -102,13 +105,15 @@ public class TurnoService : ITurnoService
         return MapToDto(turno, turno.Sucursal?.Nombre ?? string.Empty);
     }
 
-    private static string GenerarCodigoTurno(int sucursalId, int consecutivoDia) =>
-        $"S{sucursalId:D2}-{DateTime.UtcNow:yyMMdd}-{consecutivoDia:D3}";
+    private static string GenerarCodigoTurno(int sucursalId, int consecutivoDia, DateTime ahoraUtc)
+    {
+        return $"S{sucursalId:D2}-{ahoraUtc:yyMMdd}-{consecutivoDia:D3}";
+    }
 
     private static TurnoDto MapToDto(Turno t, string sucursalNombre)
     {
         var segundosRestantes = t.Estado == EstadoTurno.Pendiente
-            ? Math.Max(0, (int)(t.FechaHoraExpiracion - DateTime.UtcNow).TotalSeconds)
+            ? Math.Max(0, (int)(t.FechaHoraExpiracion - ColombiaClock.Ahora).TotalSeconds)
             : 0;
 
         return new TurnoDto(

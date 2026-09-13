@@ -27,7 +27,7 @@ public class TurnoServiceTests
     public async Task CrearTurno_CuandoEsValido_DeberiaCrearloConEstadoPendiente()
     {
         _sucursalRepo.Setup(r => r.GetByIdAsync(1, default)).ReturnsAsync(SucursalActiva());
-        _turnoRepo.Setup(r => r.CountByCedulaOnDateAsync("123456", It.IsAny<DateTime>(), default)).ReturnsAsync(0);
+        _turnoRepo.Setup(r => r.CountByCedulaBetweenAsync("123456", It.IsAny<DateTime>(), It.IsAny<DateTime>(), default)).ReturnsAsync(0);
 
         var dto = new CrearTurnoDto("123456", 1);
         var resultado = await _sut.CrearTurnoAsync(dto);
@@ -42,7 +42,7 @@ public class TurnoServiceTests
     public async Task CrearTurno_CuandoYaTieneCincoTurnosHoy_DeberiaLanzarExcepcion()
     {
         _sucursalRepo.Setup(r => r.GetByIdAsync(1, default)).ReturnsAsync(SucursalActiva());
-        _turnoRepo.Setup(r => r.CountByCedulaOnDateAsync("123456", It.IsAny<DateTime>(), default)).ReturnsAsync(5);
+        _turnoRepo.Setup(r => r.CountByCedulaBetweenAsync("123456", It.IsAny<DateTime>(), It.IsAny<DateTime>(), default)).ReturnsAsync(5);
 
         var dto = new CrearTurnoDto("123456", 1);
         var accion = () => _sut.CrearTurnoAsync(dto);

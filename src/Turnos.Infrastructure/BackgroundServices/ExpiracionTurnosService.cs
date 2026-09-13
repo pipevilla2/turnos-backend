@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Turnos.Domain.Interfaces;
+using Turnos.Domain.Time;
 
 namespace Turnos.Infrastructure.BackgroundServices;
 
@@ -32,11 +33,12 @@ public class ExpiracionTurnosService : BackgroundService
                 using var scope = _scopeFactory.CreateScope();
                 var repo = scope.ServiceProvider.GetRequiredService<ITurnoRepository>();
 
-                var vencidos = await repo.GetPendientesVencidosAsync(DateTime.UtcNow, stoppingToken);
+                var ahora = ColombiaClock.Ahora;
+                var vencidos = await repo.GetPendientesVencidosAsync(ahora, stoppingToken);
                 if (vencidos.Count > 0)
                 {
                     foreach (var turno in vencidos)
-                        turno.IntentarExpirar(DateTime.UtcNow);
+                        turno.IntentarExpirar(ahora);
 
                     await repo.SaveChangesAsync(stoppingToken);
                     _logger.LogInformation("Se expiraron {Cantidad} turnos vencidos.", vencidos.Count);
