@@ -11,8 +11,9 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
-    <!-- Alinea la versión con Turnos.Api para evitar que la 6.35.0 transitiva sobrescriba la 7.1.2 al publicar -->
+    <!-- Alinea toda la familia IdentityModel con Turnos.Api (7.1.2) para evitar que las 6.35.0 transitivas sobrescriban al publicar -->
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.1.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Turnos.Domain\Turnos.Domain.csproj" />
