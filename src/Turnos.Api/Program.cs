@@ -106,10 +106,19 @@ app.UseAuthorization();
 app.MapControllers();
 
 // ---------- Migración/seed de base de datos al iniciar ----------
+// Se ignoran errores de conexión aquí para no romper herramientas que cargan
+// este ensamblado sin una base de datos real disponible (p. ej. Swagger CLI).
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TurnosDbContext>();
-    DbSeeder.Seed(db);
+    try
+    {
+        DbSeeder.Seed(db);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "No se pudo inicializar/sembrar la base de datos al arrancar.");
+    }
 }
 
 app.Run();
