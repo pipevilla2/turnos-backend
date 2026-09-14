@@ -47,24 +47,28 @@ public class TurnoRepository : ITurnoRepository
 
     public async Task<int> GetNextConsecutivoAsync(int sucursalId, CancellationToken ct = default)
     {
+        // Incremento atómico del consecutivo por sucursal. El MERGE con HOLDLOCK
+        // toma un bloqueo de rango sobre la fila e impide que dos peticiones
+        // concurrentes obtengan el mismo valor (evita códigos de turno duplicados).
+        await using var tx = await _context.Database.BeginTransactionAsync(ct);
+
+        await _context.Database.ExecuteSqlInterpolatedAsync($@"
+            MERGE dbo.TurnosConsecutivos WITH (HOLDLOCK) AS target
+            USING (SELECT {sucursalId} AS SucursalId) AS src
+                ON target.SucursalId = src.SucursalId
+            WHEN MATCHED THEN
+                UPDATE SET UltimoConsecutivo = target.UltimoConsecutivo + 1
+            WHEN NOT MATCHED THEN
+                INSERT (SucursalId, UltimoConsecutivo) VALUES (src.SucursalId, 1);", ct);
+
         var consecutivo = await _context.TurnosConsecutivos
-            .FirstOrDefaultAsync(c => c.SucursalId == sucursalId, ct);
+            .AsNoTracking()
+            .Where(c => c.SucursalId == sucursalId)
+            .Select(c => c.UltimoConsecutivo)
+            .FirstAsync(ct);
 
-        if (consecutivo is null)
-        {
-            consecutivo = new TurnoConsecutivo
-            {
-                SucursalId = sucursalId,
-                UltimoConsecutivo = 0
-            };
-            await _context.TurnosConsecutivos.AddAsync(consecutivo, ct);
-            await _context.SaveChangesAsync(ct);
-        }
-
-        consecutivo.UltimoConsecutivo += 1;
-        await _context.SaveChangesAsync(ct);
-
-        return consecutivo.UltimoConsecutivo;
+        await tx.CommitAsync(ct);
+        return consecutivo;
     }
 
     public Task<IReadOnlyList<Turno>> GetPendientesVencidosAsync(DateTime ahoraUtc, CancellationToken ct = default) =>
