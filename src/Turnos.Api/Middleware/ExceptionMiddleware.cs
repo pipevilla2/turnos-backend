@@ -27,7 +27,11 @@ public class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            var (status, titulo) = ex switch
+            var causa = ex;
+            while (causa.InnerException is not null)
+                causa = causa.InnerException;
+
+            var (status, titulo) = causa switch
             {
                 NotFoundException => (HttpStatusCode.NotFound, "Recurso no encontrado"),
                 LimiteTurnosDiariosException => (HttpStatusCode.Conflict, "Límite diario de turnos alcanzado"),
@@ -38,7 +42,7 @@ public class ExceptionMiddleware
             };
 
             if (status == HttpStatusCode.InternalServerError)
-                _logger.LogError(ex, "Error no controlado procesando {Path}", context.Request.Path);
+                _logger.LogError(causa, "Error no controlado procesando {Path}", context.Request.Path);
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)status;
@@ -47,7 +51,7 @@ public class ExceptionMiddleware
             {
                 status = (int)status,
                 titulo,
-                detalle = ex.Message,
+                detalle = causa.Message,
                 path = context.Request.Path.Value
             });
 
