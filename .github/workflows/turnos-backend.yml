@@ -14,14 +14,13 @@ env:
   AZURE_APIM_SERVICENAME: TurnosApiapi
   AZURE_APIM_API_ID: TurnosApi
   AZURE_APIM_APPSERVICEURL: https://turnos-backend-hpgygthvgpcdcbbf.westus3-01.azurewebsites.net
-  SWASHBUCKLE_CLI_VERSION: 8.0.0
+  SWASHBUCKLE_CLI_VERSION: 6.6.2
   SWASHBUCKLE_DOTNET_CORE_VERSION: 8.x
   API_IMPORT_SPECIFICATION_PATH: src\Turnos.Api\publish\swagger.json
   API_IMPORT_DLL: src\Turnos.Api\publish\Turnos.Api.dll
   API_IMPORT_VERSION: v1
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 8.0.x
-  DOTNET_RUNTIME_VERSION: 9.0.x
   WORKING_DIRECTORY: src\Turnos.Api
 jobs:
   build:
@@ -29,12 +28,10 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Setup .NET SDKs
+    - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: |
-          ${{ env.DOTNET_CORE_VERSION }}
-          ${{ env.DOTNET_RUNTIME_VERSION }}
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Setup SwashBuckle .NET Core
       uses: actions/setup-dotnet@v4
       with:
