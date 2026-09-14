@@ -24,18 +24,36 @@ public class TurnoServiceTests
     private static Sucursal SucursalActiva(int id = 1) => new() { Id = id, Nombre = "Centro", Direccion = "Cra 1", Ciudad = "Medellín", Activa = true };
 
     [Fact]
-    public async Task CrearTurno_CuandoEsValido_DeberiaCrearloConEstadoPendiente()
+    public async Task CrearTurno_CuandoEsValido_DeberiaCrearloConEstadoPendienteYCodigoDeConsecutivo()
     {
+        var fechaHoy = DateTime.UtcNow;
         _sucursalRepo.Setup(r => r.GetByIdAsync(1, default)).ReturnsAsync(SucursalActiva());
         _turnoRepo.Setup(r => r.CountByCedulaBetweenAsync("123456", It.IsAny<DateTime>(), It.IsAny<DateTime>(), default)).ReturnsAsync(0);
+        _turnoRepo.Setup(r => r.GetNextConsecutivoAsync(1, default)).ReturnsAsync(1);
 
         var dto = new CrearTurnoDto("123456", 1);
         var resultado = await _sut.CrearTurnoAsync(dto);
 
         resultado.Estado.Should().Be(nameof(EstadoTurno.Pendiente));
         resultado.Cedula.Should().Be("123456");
+        resultado.CodigoTurno.Should().Be("S01-001");
+        _turnoRepo.Verify(r => r.GetNextConsecutivoAsync(1, default), Times.Once);
         _turnoRepo.Verify(r => r.AddAsync(It.IsAny<Turno>(), default), Times.Once);
         _turnoRepo.Verify(r => r.SaveChangesAsync(default), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearTurno_CuandoHayConsecutivoDeSucursal_DeberiaGenerarElSiguienteCodigo()
+    {
+        var fechaHoy = DateTime.UtcNow;
+        _sucursalRepo.Setup(r => r.GetByIdAsync(3, default)).ReturnsAsync(SucursalActiva(3));
+        _turnoRepo.Setup(r => r.CountByCedulaBetweenAsync("999999", It.IsAny<DateTime>(), It.IsAny<DateTime>(), default)).ReturnsAsync(0);
+        _turnoRepo.Setup(r => r.GetNextConsecutivoAsync(3, default)).ReturnsAsync(12);
+
+        var dto = new CrearTurnoDto("999999", 3);
+        var resultado = await _sut.CrearTurnoAsync(dto);
+
+        resultado.CodigoTurno.Should().Be("S03-012");
     }
 
     [Fact]
@@ -87,15 +105,14 @@ public class TurnoServiceTests
     }
 
     [Fact]
-    public async Task ActivarTurno_DespuesDe15Minutos_DeberiaLanzarTurnoExpirado()
+    public void ActivarTurno_DespuesDe15Minutos_DeberiaLanzarTurnoExpirado()
     {
-        // Se crea el turno "hace 20 minutos" para simular que el límite ya venció.
-        var turno = Turno.Crear("123456", 1, "S01-240101-001", DateTime.UtcNow.AddMinutes(-20));
-        _turnoRepo.Setup(r => r.GetByIdAsync(turno.Id, default)).ReturnsAsync(turno);
+        var ahora = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+        var turno = Turno.Crear("123456", 1, "S01-240101-001", ahora);
 
-        var accion = () => _sut.ActivarTurnoAsync(turno.Id);
+        var accion = () => turno.Activar(ahora.AddMinutes(16));
 
-        await accion.Should().ThrowAsync<TurnoExpiradoException>();
+        accion.Should().Throw<TurnoExpiradoException>();
     }
 
     [Fact]

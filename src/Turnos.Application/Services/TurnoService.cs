@@ -39,8 +39,8 @@ public class TurnoService : ITurnoService
         if (turnosCedulaHoy >= Turno.MaxTurnosDiarios)
             throw new LimiteTurnosDiariosException(dto.Cedula);
 
-        var turnosSucursalHoy = await _turnoRepository.CountBySucursalBetweenAsync(sucursal.Id, inicioDia, finDia, ct);
-        var codigo = GenerarCodigoTurno(sucursal.Id, turnosSucursalHoy + 1, ahora);
+        var consecutivo = await _turnoRepository.GetNextConsecutivoAsync(sucursal.Id, ct);
+        var codigo = GenerarCodigoTurno(sucursal.Id, consecutivo);
         var turno = Turno.Crear(dto.Cedula, sucursal.Id, codigo, ahora);
 
         await _turnoRepository.AddAsync(turno, ct);
@@ -105,9 +105,9 @@ public class TurnoService : ITurnoService
         return MapToDto(turno, turno.Sucursal?.Nombre ?? string.Empty);
     }
 
-    private static string GenerarCodigoTurno(int sucursalId, int consecutivoDia, DateTime ahoraUtc)
+    private static string GenerarCodigoTurno(int sucursalId, int consecutivoDia)
     {
-        return $"S{sucursalId:D2}-{ahoraUtc:yyMMdd}-{consecutivoDia:D3}";
+        return $"S{sucursalId:D2}-{consecutivoDia:D3}";
     }
 
     private static TurnoDto MapToDto(Turno t, string sucursalNombre)

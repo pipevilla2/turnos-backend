@@ -10,6 +10,7 @@ public class TurnosDbContext : DbContext
 
     public DbSet<Turno> Turnos => Set<Turno>();
     public DbSet<Sucursal> Sucursales => Set<Sucursal>();
+    public DbSet<TurnoConsecutivo> TurnosConsecutivos => Set<TurnoConsecutivo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,11 +22,18 @@ public class TurnosDbContext : DbContext
             b.Property(s => s.Ciudad).IsRequired().HasMaxLength(100);
         });
 
+        modelBuilder.Entity<TurnoConsecutivo>(b =>
+        {
+            b.HasKey(c => c.SucursalId);
+            b.Property(c => c.UltimoConsecutivo).IsRequired();
+        });
+
         modelBuilder.Entity<Turno>(b =>
         {
             b.HasKey(t => t.Id);
             b.Property(t => t.Cedula).IsRequired().HasMaxLength(20);
             b.Property(t => t.CodigoTurno).IsRequired().HasMaxLength(30);
+            b.HasIndex(t => t.CodigoTurno).IsUnique();
             b.Property(t => t.Estado)
                 .HasConversion<string>()
                 .HasMaxLength(20);
@@ -35,8 +43,6 @@ public class TurnosDbContext : DbContext
                 .HasForeignKey(t => t.SucursalId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Índices que soportan las consultas más frecuentes:
-            // validar el límite diario por cédula y el barrido de expiración.
             b.HasIndex(t => new { t.Cedula, t.FechaHoraCreacion });
             b.HasIndex(t => new { t.Estado, t.FechaHoraExpiracion });
         });

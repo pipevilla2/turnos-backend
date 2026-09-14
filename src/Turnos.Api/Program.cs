@@ -21,7 +21,7 @@ builder.Services.Configure<EmpleadoDemoSettings>(builder.Configuration.GetSectio
 
 // ---------- Persistencia ----------
 builder.Services.AddDbContext<TurnosDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 // ---------- Inyección de dependencias (patrón Repository + Service Layer) ----------
 builder.Services.AddScoped<ITurnoRepository, TurnoRepository>();

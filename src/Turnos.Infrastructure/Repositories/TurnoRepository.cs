@@ -45,6 +45,28 @@ public class TurnoRepository : ITurnoRepository
             t.FechaHoraCreacion >= inicio &&
             t.FechaHoraCreacion < fin, ct);
 
+    public async Task<int> GetNextConsecutivoAsync(int sucursalId, CancellationToken ct = default)
+    {
+        var consecutivo = await _context.TurnosConsecutivos
+            .FirstOrDefaultAsync(c => c.SucursalId == sucursalId, ct);
+
+        if (consecutivo is null)
+        {
+            consecutivo = new TurnoConsecutivo
+            {
+                SucursalId = sucursalId,
+                UltimoConsecutivo = 0
+            };
+            await _context.TurnosConsecutivos.AddAsync(consecutivo, ct);
+            await _context.SaveChangesAsync(ct);
+        }
+
+        consecutivo.UltimoConsecutivo += 1;
+        await _context.SaveChangesAsync(ct);
+
+        return consecutivo.UltimoConsecutivo;
+    }
+
     public Task<IReadOnlyList<Turno>> GetPendientesVencidosAsync(DateTime ahoraUtc, CancellationToken ct = default) =>
         _context.Turnos
             .Where(t => t.Estado == EstadoTurno.Pendiente && t.FechaHoraExpiracion < ahoraUtc)
