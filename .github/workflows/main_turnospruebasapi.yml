@@ -27,7 +27,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish src/Turnos.Api/Turnos.Api.csproj -c Release --no-build -o "${{ runner.temp }}/myapp"
+        run: dotnet publish src/Turnos.Api/Turnos.Api.csproj -c Release -o "${{ runner.temp }}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
