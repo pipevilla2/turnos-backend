@@ -14,10 +14,10 @@ env:
   AZURE_APIM_SERVICENAME: TurnosApiapi
   AZURE_APIM_API_ID: TurnosApi
   AZURE_APIM_APPSERVICEURL: https://turnos-backend-hpgygthvgpcdcbbf.westus3-01.azurewebsites.net
-  SWASHBUCLE_ASPNET_CORE_CLI_PACKAGE_VERSION: 8.1.1
+  SWASHBUCKLE_CLI_VERSION: 8.0.0
   SWASHBUCKLE_DOTNET_CORE_VERSION: 8.x
   API_IMPORT_SPECIFICATION_PATH: src\Turnos.Api\publish\swagger.json
-  API_IMPORT_DLL: src\Turnos.Api\bin\Release\net8.0\Turnos.Api.dll
+  API_IMPORT_DLL: src\Turnos.Api\publish\Turnos.Api.dll
   API_IMPORT_VERSION: v1
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 8.0.x
@@ -45,7 +45,7 @@ jobs:
     - name: Publish
       run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     - name: Install Swashbuckle CLI .NET Global Tool
-      run: dotnet tool install --global Swashbuckle.AspNetCore.Cli --version ${{ env.SWASHBUCLE_ASPNET_CORE_CLI_PACKAGE_VERSION }}
+      run: dotnet tool install --global Swashbuckle.AspNetCore.Cli --version ${{ env.SWASHBUCKLE_CLI_VERSION }}
       working-directory: ${{ env.WORKING_DIRECTORY }}
     - name: Generate Open API Specification Document
       run: swagger tofile --serializeasv2 --output "${{ env.API_IMPORT_SPECIFICATION_PATH }}" "${{ env.API_IMPORT_DLL }}" "${{ env.API_IMPORT_VERSION }}"
