@@ -21,6 +21,7 @@ env:
   API_IMPORT_VERSION: v1
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 8.0.x
+  DOTNET_RUNTIME_VERSION: 9.0.x
   WORKING_DIRECTORY: src\Turnos.Api
 jobs:
   build:
@@ -28,10 +29,12 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Setup .NET SDK
+    - name: Setup .NET SDKs
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+        dotnet-version: |
+          ${{ env.DOTNET_CORE_VERSION }}
+          ${{ env.DOTNET_RUNTIME_VERSION }}
     - name: Setup SwashBuckle .NET Core
       uses: actions/setup-dotnet@v4
       with:
@@ -44,11 +47,11 @@ jobs:
       run: dotnet test "${{ env.WORKING_DIRECTORY }}" --no-build
     - name: Publish
       run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
-    - name: Install Swashbuckle CLI .NET Global Tool
-      run: dotnet tool install --global Swashbuckle.AspNetCore.Cli --version ${{ env.SWASHBUCKLE_CLI_VERSION }}
+    - name: Install Swashbuckle CLI locally
+      run: dotnet tool install --tool-path ./.dotnet-tools Swashbuckle.AspNetCore.Cli --version ${{ env.SWASHBUCKLE_CLI_VERSION }}
       working-directory: ${{ env.WORKING_DIRECTORY }}
     - name: Generate Open API Specification Document
-      run: swagger tofile --serializeasv2 --output "${{ env.API_IMPORT_SPECIFICATION_PATH }}" "${{ env.API_IMPORT_DLL }}" "${{ env.API_IMPORT_VERSION }}"
+      run: ./.dotnet-tools/swagger tofile --serializeasv2 --output "${{ env.API_IMPORT_SPECIFICATION_PATH }}" "${{ env.API_IMPORT_DLL }}" "${{ env.API_IMPORT_VERSION }}"
     - name: Publish Artifacts
       uses: actions/upload-artifact@v4
       with:
