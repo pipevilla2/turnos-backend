@@ -29,6 +29,21 @@ jobs:
       - name: dotnet publish
         run: dotnet publish src/Turnos.Api/Turnos.Api.csproj -c Release -o "${{ runner.temp }}/myapp"
 
+      - name: Verify published runtime files
+        shell: pwsh
+        run: |
+          $required = @(
+            "Turnos.Api.dll",
+            "System.IdentityModel.Tokens.Jwt.dll",
+            "Turnos.Api.deps.json"
+          )
+          $missing = $required | Where-Object {
+            -not (Test-Path (Join-Path "${{ runner.temp }}/myapp" $_))
+          }
+          if ($missing) {
+            throw "Missing published files: $($missing -join ', ')"
+          }
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
