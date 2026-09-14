@@ -49,9 +49,12 @@ jobs:
       run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     - name: Install Swashbuckle CLI locally
       run: dotnet tool install --tool-path ./.dotnet-tools Swashbuckle.AspNetCore.Cli --version ${{ env.SWASHBUCKLE_CLI_VERSION }}
-      working-directory: ${{ env.WORKING_DIRECTORY }}
+
     - name: Generate Open API Specification Document
-      run: ./.dotnet-tools/swagger tofile --serializeasv2 --output "${{ env.API_IMPORT_SPECIFICATION_PATH }}" "${{ env.API_IMPORT_DLL }}" "${{ env.API_IMPORT_VERSION }}"
+      shell: pwsh
+      run: |
+        $swagger = Join-Path $PWD ".dotnet-tools\swagger.exe"
+        & $swagger tofile --serializeasv2 --output "${{ env.API_IMPORT_SPECIFICATION_PATH }}" "${{ env.API_IMPORT_DLL }}" "${{ env.API_IMPORT_VERSION }}"
     - name: Publish Artifacts
       uses: actions/upload-artifact@v4
       with:
